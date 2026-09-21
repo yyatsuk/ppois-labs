@@ -1,0 +1,26 @@
+# Сборка (C++, CMake, etc.)
+build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+*.o
+*.obj
+*.exe
+*.dll
+*.pdb
+*.a
+*.so
+*.dylib
+
+# IDE / Редакторы
+.vs/
+.vscode/
+*.user
+.idea/
+*.swp
+
+# ОС и прочее
+.DS_Store
+Thumbs.db
+*.log
