@@ -1,80 +1,41 @@
 #include "Tape.h"
-#include <string>
 
 namespace {
-const char kMarkSymbol = '1';
-const char kEmptySymbol = '0';
-const int kInitialCellCount = 1;
+const char kMark = '1';
+const char kEmpty = '0';
+const char* const kAlphabet = "01";
+const std::size_t kInitialSize = 1;
 const int kStartPosition = 0;
-
-bool isValidSymbol(char symbol) {
-    return symbol == kMarkSymbol || symbol == kEmptySymbol;
 }
 
-bool parseCells(const std::string& rawCells, std::vector<bool>& cells) {
-    cells.clear();
-    for (char symbol : rawCells) {
-        if (!isValidSymbol(symbol)) {
-            return false;
-        }
-        cells.push_back(symbol == kMarkSymbol);
-    }
-    return !cells.empty();
-}
-}
+Tape::Tape() : cells_(kInitialSize, kEmpty), position_(kStartPosition) {}
 
-Tape::Tape() : cells_(kInitialCellCount, false), position_(kStartPosition) {
-}
+void Tape::mark() { cells_[position_] = kMark; }
 
-Tape::Tape(const Tape& other)
-    : cells_(other.cells_), position_(other.position_) {
-}
+void Tape::erase() { cells_[position_] = kEmpty; }
 
-Tape& Tape::operator=(const Tape& other) {
-    if (this != &other) {
-        cells_ = other.cells_;
-        position_ = other.position_;
-    }
-    return *this;
-}
+bool Tape::isMarked() const { return cells_[position_] == kMark; }
 
-void Tape::mark() {
-    cells_[position_] = true;
-}
-
-void Tape::erase() {
-    cells_[position_] = false;
-}
-
-bool Tape::isMarked() const {
-    return cells_[position_];
-}
-
-void Tape::ensureCellExists() {
-    if (position_ >= static_cast<int>(cells_.size())) {
-        cells_.push_back(false);
-    }
-}
+int Tape::position() const { return position_; }
 
 Tape& Tape::operator++() {
     ++position_;
-    ensureCellExists();
+    if (position_ == static_cast<int>(cells_.size())) {
+        cells_ += kEmpty;
+    }
     return *this;
 }
 
 Tape& Tape::operator--() {
     if (position_ == kStartPosition) {
-        cells_.insert(cells_.begin(), false);
+        // Левее нулевой ячейки ничего нет: вставляем пустую ячейку в начало,
+        // каретка остаётся на индексе 0, то есть на новой ячейке.
+        cells_.insert(cells_.begin(), kEmpty);
     } else {
         --position_;
     }
     return *this;
 }
-
-int Tape::position() const {
-    return position_;
-}
-
 bool Tape::operator==(const Tape& other) const {
     return cells_ == other.cells_ && position_ == other.position_;
 }
@@ -84,28 +45,23 @@ bool Tape::operator!=(const Tape& other) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const Tape& tape) {
-    for (bool cell : tape.cells_) {
-        os << (cell ? kMarkSymbol : kEmptySymbol);
-    }
-    os << ' ' << tape.position_;
-    return os;
+    return os << tape.cells_ << ' ' << tape.position_;
 }
 
 std::istream& operator>>(std::istream& is, Tape& tape) {
-    std::string rawCells;
+    std::string cells;
     int position = kStartPosition;
-    if (!(is >> rawCells >> position)) {
+    if (!(is >> cells >> position)) {
         return is;
     }
-    std::vector<bool> loadedCells;
-    bool cellsAreValid = parseCells(rawCells, loadedCells);
-    bool positionIsValid = position >= kStartPosition
-        && position < static_cast<int>(loadedCells.size());
-    if (!cellsAreValid || !positionIsValid) {
+    bool isValid = cells.find_first_not_of(kAlphabet) == std::string::npos
+        && position >= kStartPosition && position < static_cast<int>(cells.size());
+    if (!isValid) {
         is.setstate(std::ios::failbit);
         return is;
     }
-    tape.cells_ = loadedCells;
+    // Меняем ленту только после успешной проверки обоих полей.
+    tape.cells_ = cells;
     tape.position_ = position;
     return is;
 }
