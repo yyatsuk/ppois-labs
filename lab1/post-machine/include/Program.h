@@ -3,142 +3,86 @@
 #include <iostream>
 #include <map>
 
-/// Тип команды машины Поста.
-enum class CommandType { Mark, Erase, Left, Right, Check, Stop };
-
 /**
- * @brief Одна команда программы машины Поста.
+ * @brief Команда машины Поста.
  *
- * Текстовый формат: "V n" (поставить метку), "X n" (стереть метку),
- * "R n" (вправо), "L n" (влево), "? a b" (проверка), "!" (остановка).
- * Для Check переход next выполняется, если в ячейке есть метка,
- * а alternative выполняется, если ячейка пуста.
+ * Текстовый формат: "V n" (поставить метку), "X n" (стереть), "R n" (вправо),
+ * "L n" (влево), "? a b" (есть метка: перейти к a, иначе к b), "!" (остановка).
  */
 class Command {
 public:
-    /// Значение перехода, которое означает "перехода нет".
-    static constexpr int kNoTarget = 0;
+    static constexpr char kMark = 'V';
+    static constexpr char kErase = 'X';
+    static constexpr char kLeft = 'L';
+    static constexpr char kRight = 'R';
+    static constexpr char kCheck = '?';
+    static constexpr char kStop = '!';
+    static constexpr int kNoTarget = 0;    ///< Значение перехода "перехода нет".
+    static constexpr int kFirstLine = 1;   ///< Номер первой допустимой строки программы.
 
-    /// Номер первой допустимой строки программы.
-    static constexpr int kFirstLineNumber = 1;
-
-    /// Создаёт команду остановки.
-    Command();
-
-    /// Создаёт команду заданного типа с переходами.
-    Command(CommandType type, int next = kNoTarget, int alternative = kNoTarget);
-
-    /// Конструктор копирования.
+    explicit Command(char type = kStop, int next = kNoTarget, int alternative = kNoTarget);
     Command(const Command& other) = default;
-
-    /// Оператор присваивания копированием.
     Command& operator=(const Command& other) = default;
-
-    /// Деструктор.
     ~Command() = default;
 
-    /// Возвращает тип команды.
-    CommandType type() const;
+    char type() const;          ///< Символ команды.
+    int next() const;           ///< Следующая строка (для '?': если метка есть).
+    int alternative() const;    ///< Строка для '?', если ячейка пуста.
 
-    /// Возвращает номер следующей строки (для Check: если в ячейке есть метка).
-    int next() const;
+    bool operator==(const Command& other) const;  ///< Сравнивает тип и переходы.
+    bool operator!=(const Command& other) const;  ///< Возвращает true, если команды различаются.
 
-    /// Возвращает номер строки для Check, если ячейка пуста.
-    int alternative() const;
-
-    /// Сравнивает команды по типу и переходам.
-    bool operator==(const Command& other) const;
-
-    /// Возвращает true, если команды различаются.
-    bool operator!=(const Command& other) const;
-
-    /// Записывает команду в поток в текстовом формате.
+    /// Записывает команду в текстовом формате.
     friend std::ostream& operator<<(std::ostream& os, const Command& command);
 
-    /**
-     * @brief Читает команду из потока.
-     *
-     * При неизвестном символе или неверном переходе поток переходит
-     * в состояние failbit, а команда остаётся прежней.
-     */
+    /// Читает команду. При неверных данных ставит failbit и не меняет команду.
     friend std::istream& operator>>(std::istream& is, Command& command);
 
 private:
-    /// Тип команды.
-    CommandType type_;
-
-    /// Основной переход.
+    char type_;
     int next_;
-
-    /// Дополнительный переход (только для Check).
     int alternative_;
 };
 
 /**
- * @brief Программа машины Поста: набор команд, пронумерованных строками.
+ * @brief Программа машины Поста: команды, пронумерованные строками.
  *
- * Текстовый формат: сначала количество правил, затем по одной строке
- * "номер команда". Пример:
+ * Текстовый формат: количество правил, затем строки "номер команда". Пример:
  *   2
  *   1 V 2
  *   2 !
  */
 class Program {
 public:
-    /// Создаёт пустую программу.
-    Program();
-
-    /// Конструктор копирования.
-    Program(const Program& other);
-
-    /// Оператор присваивания копированием.
-    Program& operator=(const Program& other);
-
-    /// Деструктор (память освобождает std::map).
+    Program() = default;
+    Program(const Program& other) = default;
+    Program& operator=(const Program& other) = default;
     ~Program() = default;
 
-    /**
-     * @brief Добавляет правило.
-     * @return false, если номер меньше 1 или правило с таким номером уже есть.
-     */
+    /// Добавляет правило. Возвращает false, если номер меньше 1 или уже занят.
     bool addRule(int number, const Command& command);
 
-    /// Удаляет правило. Возвращает false, если правила с таким номером нет.
+    /// Удаляет правило. Возвращает false, если такого номера нет.
     bool removeRule(int number);
 
-    /// Проверяет, есть ли правило с указанным номером.
-    bool hasRule(int number) const;
+    /// Возвращает правило по номеру или nullptr, если его нет.
+    const Command* findRule(int number) const;
 
-    /// Возвращает правило по номеру. Бросает std::out_of_range, если его нет.
-    const Command& getRule(int number) const;
+    /// Наименьший номер правила или Command::kNoTarget для пустой программы.
+    int firstLine() const;
 
-    /// Возвращает наименьший номер правила или Command::kNoTarget для пустой программы.
-    int startNumber() const;
-
-    /// Возвращает количество правил.
+    /// Количество правил.
     std::size_t size() const;
 
-    /// Возвращает true, если в программе нет правил.
-    bool empty() const;
+    bool operator==(const Program& other) const;  ///< Сравнивает наборы правил.
+    bool operator!=(const Program& other) const;  ///< Возвращает true, если программы различаются.
 
-    /// Сравнивает программы по набору правил.
-    bool operator==(const Program& other) const;
-
-    /// Возвращает true, если программы различаются.
-    bool operator!=(const Program& other) const;
-
-    /// Записывает программу в поток в текстовом формате.
+    /// Записывает программу в текстовом формате.
     friend std::ostream& operator<<(std::ostream& os, const Program& program);
 
-    /**
-     * @brief Читает программу из потока.
-     *
-     * При неверных данных (плохая команда, повторный номер, номер меньше 1)
-     * поток переходит в состояние failbit, а программа остаётся прежней.
-     */
+    /// Читает программу. При неверных данных ставит failbit и не меняет программу.
     friend std::istream& operator>>(std::istream& is, Program& program);
 
 private:
-    /// Правила: ключ это номер строки, значение это команда.
-    std::map<int, Command> rules_;
+    std::map<int, Command> rules_;   ///< Номер строки и команда.
 };
