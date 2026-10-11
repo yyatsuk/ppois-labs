@@ -1,4 +1,3 @@
-#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -6,89 +5,30 @@
 #include "Machine.h"
 #include "TuringMachine.h"
 
-namespace {
-const char* const kLogFlag = "-log";
-const char* const kMenuFlag = "--menu";
-const char* const kMachineFlag = "--machine";
-
-const char* const kPostName = "post";
-const char* const kTuringName = "turing";
-
-enum ExitCode { kOk = 0, kUsageError = 1, kFileError = 2, kFormatError = 3, kRunError = 4 };
-
-enum class MachineKind { Post, Turing };
-
-/// Пункты интерактивного меню (общие для обеих машин).
-enum class MenuItem : int {
-    Exit = 0,
-    ShowState = 1,
-    ShowProgram = 2,
-    Step = 3,
-    RunAll = 4,
-    AddRule = 5,
-    RemoveRule = 6,
-    Reset = 7
-};
-
 struct Options {
-    std::string path;
-    MachineKind kind = MachineKind::Post;
-    bool kindSpecified = false;
-    bool logEnabled = false;
-    bool menuEnabled = false;
+    std::string path;      // путь к файлу
+    std::string kind;      // "post" или "turing"
+    bool log = false;      // флаг -log
+    bool menu = false;     // флаг --menu
 };
 
-//Разбор аргументов
-
-bool parseMachineKind(const std::string& name, Options& options) {
-    if (name == kPostName) {
-        options.kind = MachineKind::Post;
-    } else if (name == kTuringName) {
-        options.kind = MachineKind::Turing;
-    } else {
-        return false;
-    }
-    options.kindSpecified = true;
-    return true;
-}
-
-bool parseArgument(int argc, char* argv[], int& index, Options& options) {
-    std::string argument = argv[index];
-    if (argument == kLogFlag) {
-        options.logEnabled = true;
-        return true;
-    }
-    if (argument == kMenuFlag) {
-        options.menuEnabled = true;
-        return true;
-    }
-    if (argument == kMachineFlag && index + 1 < argc) {
-        ++index;
-        return parseMachineKind(argv[index], options);
-    }
-    if (options.path.empty()) {
-        options.path = argument;
-        return true;
-    }
-    return false;
-}
-
-bool parseArguments(int argc, char* argv[], Options& options) {
-    for (int index = 1; index < argc; ++index) {
-        if (!parseArgument(argc, argv, index, options)) {
+// Разбор аргументов командной строки
+bool parseArgs(int argc, char* argv[], Options& o) {
+    for (int i = 1; i < argc; ++i) {
+        std::string a = argv[i];
+        if (a == "-log") {
+            o.log = true;
+        } else if (a == "--menu") {
+            o.menu = true;
+        } else if (a == "--machine" && i + 1 < argc) {
+            o.kind = argv[++i];
+        } else if (o.path.empty()) {
+            o.path = a;
+        } else {
             return false;
         }
     }
-    return !options.path.empty() && options.kindSpecified;
-}
-
-void printUsage() {
-    std::cerr << "Usage: lab1_cli " << kMachineFlag << " post|turing <file> ["
-              << kLogFlag << "] [" << kMenuFlag << "]\n"
-              << "  " << kMachineFlag << " post|turing   choose machine type (required)\n"
-              << "  <file>                path to file with machine data\n"
-              << "  " << kLogFlag << "               print state after each step\n"
-              << "  " << kMenuFlag << "              open interactive menu\n";
+    return !o.path.empty() && !o.kind.empty();
 }
 
 void clearInput() {
@@ -96,175 +36,141 @@ void clearInput() {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 }
 
-// Всё, чем машины Поста и Тьюринга различаются в CLI, собрано в перегрузках ниже.
-// Остальной код работает с обеими машинами через шаблоны.
+// ========== МАШИНА ПОСТА ==========
 
-const char* menuTitle(const Machine&) { return "Post Machine"; }
-
-const char* menuTitle(const TuringMachine&) { return "Turing Machine"; }
-
-bool isSuccess(const Machine& machine) { return machine.status() == MachineStatus::Stopped; }
-
-bool isSuccess(const TuringMachine& machine) { return machine.status() == TuringStatus::Halted; }
-
-bool readAndAddRule(Machine& machine) {
-    int number = 0;
-    Command command;
-    std::cout << "line and command: ";
-    return (std::cin >> number >> command) && machine.program().addRule(number, command);
-}
-
-bool readAndAddRule(TuringMachine& machine) {
-    TuringRule rule;
-    std::cout << "rule (state read write move next): ";
-    return (std::cin >> rule) && machine.program().addRule(rule);
-}
-
-bool readAndRemoveRule(Machine& machine) {
-    int number = 0;
-    std::cout << "line: ";
-    return (std::cin >> number) && machine.program().removeRule(number);
-}
-
-bool readAndRemoveRule(TuringMachine& machine) {
-    std::string state;
-    char symbol = TuringTape::kBlank;
-    std::cout << "state and symbol: ";
-    return (std::cin >> state >> symbol) && machine.program().removeRule(state, symbol);
-}
-
-//Общая логика для обеих машин
-
-template <typename MachineT>
-void printMachineState(const MachineT& machine, const char* prefix) {
-    std::cout << prefix;
-    machine.printState(std::cout);
-    std::cout << '\n';
-}
-
-template <typename MachineT>
-void runAll(MachineT& machine, bool logEnabled) {
-    if (logEnabled) {
-        printMachineState(machine, "start: ");
+void runPost(const Options& o) {
+    std::ifstream file(o.path);
+    if (!file) {
+        std::cerr << "Cannot open file\n";
+        return;
     }
-    std::size_t steps = 0;
-    while (steps < MachineT::kDefaultStepLimit && machine.step()) {
-        ++steps;
-        if (logEnabled) {
-            std::cout << "step " << steps << ": ";
-            machine.printState(std::cout);
-            std::cout << '\n';
+    Machine m;
+    if (!(file >> m)) {
+        std::cerr << "Invalid format\n";
+        return;
+    }
+
+    // Автоматический режим без --menu
+    if (!o.menu) {
+        if (o.log) { std::cout << "start: "; m.printState(std::cout); std::cout << "\n"; }
+        while (m.step()) {
+            if (o.log) { m.printState(std::cout); std::cout << "\n"; }
         }
+        std::cout << "final: "; m.printState(std::cout); std::cout << "\n";
+        return;
     }
-    printMachineState(machine, "final: ");
-}
 
-template <typename MachineT>
-void stepOnce(MachineT& machine) {
-    if (machine.step()) {
-        printMachineState(machine, "state: ");
-    } else {
-        std::cout << "cannot step\n";
-    }
-}
-
-template <typename MachineT>
-void addRule(MachineT& machine) {
-    if (readAndAddRule(machine)) {
-        machine.reset();
-        std::cout << "rule added\n";
-    } else {
-        clearInput();
-        std::cout << "cannot add rule\n";
-    }
-}
-
-template <typename MachineT>
-void removeRule(MachineT& machine) {
-    if (readAndRemoveRule(machine)) {
-        machine.reset();
-        std::cout << "rule removed\n";
-    } else {
-        clearInput();
-        std::cout << "not found\n";
-    }
-}
-
-void printMenu(const char* title) {
-    std::cout << "\n=== " << title << " Menu ===\n"
-              << "1. Show state\n2. Show program\n3. Step\n4. Run all\n"
-              << "5. Add rule\n6. Remove rule\n7. Reset\n0. Exit\nChoice: ";
-}
-
-/// Выполняет выбранный пункт меню. Возвращает false, если выбран выход.
-template <typename MachineT>
-bool handleChoice(MachineT& machine, int choice, bool logEnabled) {
-    switch (static_cast<MenuItem>(choice)) {
-        case MenuItem::Exit:
-            std::cout << "bye\n";
-            return false;
-        case MenuItem::ShowState: printMachineState(machine, "state: "); break;
-        case MenuItem::ShowProgram: std::cout << "program:\n" << machine.program(); break;
-        case MenuItem::Step: stepOnce(machine); break;
-        case MenuItem::RunAll: runAll(machine, logEnabled); break;
-        case MenuItem::AddRule: addRule(machine); break;
-        case MenuItem::RemoveRule: removeRule(machine); break;
-        case MenuItem::Reset:
-            machine.reset();
-            std::cout << "reset\n";
-            break;
-        default: std::cout << "unknown\n"; break;
-    }
-    return true;
-}
-
-template <typename MachineT>
-void runMenu(MachineT& machine, bool logEnabled) {
-    bool isRunning = true;
-    while (isRunning) {
-        printMenu(menuTitle(machine));
-        int choice = 0;
+    // Меню
+    int choice = -1;
+    while (choice != 0) {
+        std::cout << "\nPost menu: 1-state 2-program 3-step 4-run 5-add 6-remove 7-reset 0-exit\n> ";
         if (!(std::cin >> choice)) {
-            if (std::cin.eof()) {
-                return;
-            }
+            if (std::cin.eof()) return;
             clearInput();
             continue;
         }
-        isRunning = handleChoice(machine, choice, logEnabled);
+        if (choice == 1) {
+            m.printState(std::cout); std::cout << "\n";
+        } else if (choice == 2) {
+            std::cout << m.program();
+        } else if (choice == 3) {
+            m.step();
+            m.printState(std::cout); std::cout << "\n";
+        } else if (choice == 4) {
+            while (m.step()) {}
+            m.printState(std::cout); std::cout << "\n";
+        } else if (choice == 5) {
+            int number; Command cmd;
+            std::cout << "line and command: ";
+            if ((std::cin >> number >> cmd) && m.program().addRule(number, cmd)) {
+                m.reset(); std::cout << "added\n";
+            } else { clearInput(); std::cout << "cannot add\n"; }
+        } else if (choice == 6) {
+            int number;
+            std::cout << "line: ";
+            if ((std::cin >> number) && m.program().removeRule(number)) {
+                m.reset(); std::cout << "removed\n";
+            } else { clearInput(); std::cout << "not found\n"; }
+        } else if (choice == 7) {
+            m.reset(); std::cout << "reset\n";
+        }
     }
 }
 
-template <typename MachineT>
-int runFromFile(const Options& options) {
-    std::ifstream file(options.path);
+// ========== МАШИНА ТЬЮРИНГА ==========
+
+void runTuring(const Options& o) {
+    std::ifstream file(o.path);
     if (!file) {
-        std::cerr << "Cannot open file: " << options.path << '\n';
-        return kFileError;
+        std::cerr << "Cannot open file\n";
+        return;
     }
-    MachineT machine;
-    if (!(file >> machine)) {
-        std::cerr << "Invalid file format\n";
-        return kFormatError;
+    TuringMachine m;
+    if (!(file >> m)) {
+        std::cerr << "Invalid format\n";
+        return;
     }
-    if (options.menuEnabled) {
-        printMachineState(machine, "loaded: ");
-        runMenu(machine, options.logEnabled);
-        return kOk;
+
+    if (!o.menu) {
+        if (o.log) { std::cout << "start: "; m.printState(std::cout); std::cout << "\n"; }
+        while (m.step()) {
+            if (o.log) { m.printState(std::cout); std::cout << "\n"; }
+        }
+        std::cout << "final: "; m.printState(std::cout); std::cout << "\n";
+        return;
     }
-    runAll(machine, options.logEnabled);
-    return isSuccess(machine) ? kOk : kRunError;
+
+    int choice = -1;
+    while (choice != 0) {
+        std::cout << "\nTuring menu: 1-state 2-program 3-step 4-run 5-add 6-remove 7-reset 0-exit\n> ";
+        if (!(std::cin >> choice)) {
+            if (std::cin.eof()) return;
+            clearInput();
+            continue;
+        }
+        if (choice == 1) {
+            m.printState(std::cout); std::cout << "\n";
+        } else if (choice == 2) {
+            std::cout << m.program();
+        } else if (choice == 3) {
+            m.step();
+            m.printState(std::cout); std::cout << "\n";
+        } else if (choice == 4) {
+            while (m.step()) {}
+            m.printState(std::cout); std::cout << "\n";
+        } else if (choice == 5) {
+            TuringRule rule;
+            std::cout << "rule (state read write move next): ";
+            if ((std::cin >> rule) && m.program().addRule(rule)) {
+                m.reset(); std::cout << "added\n";
+            } else { clearInput(); std::cout << "cannot add\n"; }
+        } else if (choice == 6) {
+            std::string state; char symbol = TuringTape::kBlank;
+            std::cout << "state and symbol: ";
+            if ((std::cin >> state >> symbol) && m.program().removeRule(state, symbol)) {
+                m.reset(); std::cout << "removed\n";
+            } else { clearInput(); std::cout << "not found\n"; }
+        } else if (choice == 7) {
+            m.reset(); std::cout << "reset\n";
+        }
+    }
 }
-}  // namespace
+
+// ========== ТОЧКА ВХОДА ==========
 
 int main(int argc, char* argv[]) {
-    Options options;
-    if (!parseArguments(argc, argv, options)) {
-        printUsage();
-        return kUsageError;
+    Options o;
+    if (!parseArgs(argc, argv, o)) {
+        std::cerr << "Usage: lab1_cli --machine post|turing <file> [-log] [--menu]\n";
+        return 1;
     }
-    if (options.kind == MachineKind::Post) {
-        return runFromFile<Machine>(options);
+    if (o.kind == "post") {
+        runPost(o);
+    } else if (o.kind == "turing") {
+        runTuring(o);
+    } else {
+        std::cerr << "Unknown machine: " << o.kind << "\n";
+        return 1;
     }
-    return runFromFile<TuringMachine>(options);
+    return 0;
 }
