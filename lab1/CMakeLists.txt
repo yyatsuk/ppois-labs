@@ -8,3 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(post-machine)
 add_subdirectory(turing-machine)
 add_subdirectory(cli)
+
+enable_testing()
+add_subdirectory(tests)
