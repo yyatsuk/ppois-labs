@@ -6,4 +6,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Подключаем подпапки
 add_subdirectory(post-machine)
+add_subdirectory(turing-machine)
 add_subdirectory(cli)
