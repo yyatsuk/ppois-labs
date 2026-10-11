@@ -1,5 +1,6 @@
 # Сборка (C++, CMake, etc.)
 build/
+build*/
 out/
 cmake-build-*/
 CMakeFiles/
@@ -24,3 +25,7 @@ CMakeCache.txt
 .DS_Store
 Thumbs.db
 *.log
+
+# Doxygen (генерируемая документация)
+**/docs/html/
+**/docs/latex/
