@@ -24,3 +24,7 @@ CMakeCache.txt
 .DS_Store
 Thumbs.db
 *.log
+
+# Doxygen (генерируемая документация)
+**/docs/html/
+**/docs/latex/
