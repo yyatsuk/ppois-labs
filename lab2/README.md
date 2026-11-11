@@ -17,7 +17,7 @@
 | Costume | 4 | 2 | Role |
 | CostumeDepartment | 3 | 2 | Costume, Role |
 | Decoration | 3 | 2 | Production |
-| Director | 3 | 2 | Production, Cast |
+| Director | 4 | 2 | Production, Cast |
 | Discount | 3 | 2 | — |
 | Employee | 3 | 2 | — |
 | Expense | 4 | 2 | — |
@@ -79,7 +79,7 @@
 | Показатель | Значение |
 |---|---|
 | Классы | 50 |
-| Поля | 166 |
+| Поля | 167 |
 | Поведения | 115 |
 | Ассоциации | 71 |
 | Исключения | 13 |
