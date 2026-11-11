@@ -12,7 +12,7 @@
 | Booking | 4 | 3 | Ticket, Spectator, Payment |
 | Budget | 3 | 3 | Expense |
 | Cashier | 3 | 2 | Payment, Receipt |
-| Cast | 3 | 3 | Production, Role, Actor |
+| Cast | 3 | 4 | Production, Role, Actor |
 | Contract | 3 | 3 | Employee |
 | Costume | 4 | 2 | Role |
 | CostumeDepartment | 3 | 2 | Costume, Role |
