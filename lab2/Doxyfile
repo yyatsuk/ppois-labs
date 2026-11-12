@@ -1,0 +1,24 @@
+PROJECT_NAME           = "Theatre"
+PROJECT_NUMBER         = "1.0"
+PROJECT_BRIEF          = "Объектная модель театра: репертуар, залы, продажи, финансы, кадры"
+
+OUTPUT_DIRECTORY       = docs
+INPUT                  = include src cli tests
+FILE_PATTERNS          = *.h *.cpp *.md
+RECURSIVE              = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HTML_OUTPUT            = html
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+QUIET                  = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
