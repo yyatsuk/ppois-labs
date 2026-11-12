@@ -1,0 +1,6 @@
+PROJECT_NAME     = "Театр"
+OUTPUT_LANGUAGE  = Russian
+OUTPUT_DIRECTORY = build/docs
+INPUT            = include src cli
+EXTRACT_ALL      = YES
+GENERATE_LATEX   = NO
