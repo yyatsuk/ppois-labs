@@ -11,7 +11,7 @@
 | Класс | Поля | Методы | Ассоциации (связанные классы) |
 |---|---|---|---|
 | Alert | 5 | 2 | Region, Severity |
-| AlertCenter | 4 | 3 | Alert, AlertRule, Region, WeatherSnapshot |
+| AlertCenter | 4 | 4 | Alert, AlertRule, Region, WeatherSnapshot |
 | AlertRule | 4 | 2 | Severity, WeatherSnapshot |
 | Calibration | 4 | 2 | — |
 | City | 4 | 2 | Coordinates, Region |
@@ -24,13 +24,13 @@
 | DataSource | 3 | 2 | Coordinates, Region |
 | EventArchive | 3 | 3 | Region, WeatherEvent |
 | FavoriteLocations | 3 | 3 | City, User |
-| FloodWarning | 2 | 2 | Precipitation |
+| FloodWarning | 2 | 2 | Precipitation, Region, Severity |
 | ForecastAccuracy | 4 | 2 | Temperature |
 | ForecastBulletin | 4 | 2 | City, Confidence, DailyForecast |
 | ForecastModel | 4 | 2 | Temperature |
-| ForecastService | 4 | 3 | Alert, AlertCenter, Coordinates, DailyForecast, ForecastModel, StationNetwork, WeatherSnapshot, WeatherStation |
-| FrostWarning | 2 | 2 | Temperature |
-| HeatWarning | 2 | 2 | Temperature |
+| ForecastService | 4 | 3 | Alert, AlertCenter, CloudCover, Coordinates, DailyForecast, ForecastModel, Precipitation, Region, StationNetwork, WeatherSnapshot |
+| FrostWarning | 2 | 2 | Region, Severity, Temperature |
+| HeatWarning | 2 | 2 | Region, Severity, Temperature |
 | HourlyForecast | 4 | 2 | Temperature, Wind |
 | Humidity | 2 | 2 | Temperature |
 | HumiditySensor | 2 | 2 | Humidity |
@@ -42,12 +42,12 @@
 | PressureSensor | 2 | 2 | Pressure |
 | Region | 4 | 2 | Coordinates |
 | ReportGenerator | 4 | 2 | City, DailyForecast, ForecastAccuracy |
-| Sensor | 5 | 3 | — |
+| Sensor | 5 | 4 | — |
 | Severity | 2 | 2 | — |
 | StationNetwork | 4 | 3 | Coordinates, Region, WeatherStation |
-| StormWarning | 2 | 2 | City |
+| StormWarning | 2 | 2 | City, Region, Severity |
 | Subscription | 4 | 3 | Alert, Region, Severity, User |
-| SubscriptionManager | 3 | 2 | Alert, Subscription, User |
+| SubscriptionManager | 3 | 3 | Alert, Notification, Subscription, User |
 | Temperature | 3 | 3 | Humidity, Wind |
 | TemperatureSensor | 2 | 2 | Temperature |
 | TrendAnalyzer | 3 | 2 | Pressure, Temperature |
@@ -56,7 +56,7 @@
 | Visibility | 3 | 2 | — |
 | WeatherEvent | 4 | 2 | Severity |
 | WeatherSnapshot | 6 | 3 | CloudCover, Humidity, Precipitation, Pressure, Temperature, Wind |
-| WeatherStation | 8 | 3 | Coordinates, HumiditySensor, PressureSensor, TemperatureSensor, WeatherSnapshot, WindSensor |
+| WeatherStation | 8 | 3 | CloudCover, Coordinates, HumiditySensor, Precipitation, PressureSensor, TemperatureSensor, WeatherSnapshot, WindSensor |
 | WeeklyForecast | 4 | 3 | City, Confidence, DailyForecast |
 | Wind | 4 | 3 | — |
 | WindSensor | 2 | 2 | Wind |
@@ -83,6 +83,6 @@
 |---|---|
 | Классы | 50 |
 | Поля | 173 |
-| Поведения | 116 |
-| Ассоциации | 88 |
+| Поведения | 119 |
+| Ассоциации | 101 |
 | Исключения | 13 |
